@@ -1,0 +1,365 @@
+{
+  "cells": [
+    {
+      "metadata": {
+        "_uuid": "4ed382c1f6df06ba8cbb0d706723a62ce12f0b24"
+      },
+      "cell_type": "markdown",
+      "source": "Pengando os dados novamente"
+    },
+    {
+      "metadata": {
+        "_uuid": "0404bb79b45da6669f15e2f84d51be156efd4462",
+        "_execution_state": "idle",
+        "trusted": true
+      },
+      "cell_type": "code",
+      "source": "#bibliotecas necessárias\nlibrary(tidyverse) \nlibrary(reshape)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "196269589c60d6bde6dfd6e559daafe6d6a072fb"
+      },
+      "cell_type": "code",
+      "source": "#importando os dados de treino já pré-processados\ndados <- read.csv('../input/r-flatten-json-columns-to-make-single-data-frame/train_flat.csv')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "99ba150e88418aedc6271674fa1cd6add5e48bf8"
+      },
+      "cell_type": "markdown",
+      "source": "Colocando os \"tipo\" nos dados"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "148017119dba8a851c96384f6925c033727b83cb"
+      },
+      "cell_type": "code",
+      "source": "dados$transactionRevenue[!is.na(dados$transactionRevenue)]<- 1\ndados$transactionRevenue[is.na(dados$transactionRevenue)]<- 0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "f926fd4a2cc7978b43bcfaa82edf60dec31880fe"
+      },
+      "cell_type": "markdown",
+      "source": "Os relevantes a mais, relativos ao tempo, seriam o dia da semana e hora"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "2aa788e05b40ba6a413af405ea514f162d181ab9"
+      },
+      "cell_type": "code",
+      "source": "dados$visitStartTime <- as.POSIXct(dados$visitStartTime, origin=\"1970-01-01\")\ndados$hora <- as.numeric(substr(dados$visitStartTime,12,13)   )\ndados$semana <-weekdays(dados$visitStartTime)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "1baff8c1dae13527f0e4b4bee7dcc6d56a27f430"
+      },
+      "cell_type": "markdown",
+      "source": "Esse aqui é o df com as variaveis seleciononadas"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9e119165bdf37a91d5e6752920691cc29b7719a5"
+      },
+      "cell_type": "code",
+      "source": "df<- dados[c('transactionRevenue', 'source', 'pageviews', 'hits', 'country', 'isMobile', 'operatingSystem', 'hora', 'semana')]\nhead(df)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "88e284216a4b0afd8a95c9eaea5bcdbf9ac07f30"
+      },
+      "cell_type": "markdown",
+      "source": "tirando umas linhas com nas"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "f69ba32fe6c4060c947a445b329d17036109e054"
+      },
+      "cell_type": "code",
+      "source": "df<- df[!is.na(df$pageviews),]",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "77eec564af39aa83cedecc2f5f99c61ec57474dd"
+      },
+      "cell_type": "code",
+      "source": "norm<- function(x){return ((x - min(x)) / (max(x) - min(x))) }",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "2a28ce48769b3927440f59d28812f531f5659952"
+      },
+      "cell_type": "code",
+      "source": "df$hits <- norm(df$hits)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "41622064145bb5331ba06bc646246f29f9d34825"
+      },
+      "cell_type": "code",
+      "source": "df$pageviews <- norm(df$pageviews)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "88f4d65e1e12812886764792c7fd17e41df09b9f"
+      },
+      "cell_type": "code",
+      "source": "df$hora <- norm(df$hora)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "8eca0ad21f3fc942f51ea2d200961f5fbac14c5e"
+      },
+      "cell_type": "markdown",
+      "source": "Transformando as variáveis categóricas em numericas"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "edfda3d74ddd4632ca6cd926e7644f433fe18a2d"
+      },
+      "cell_type": "code",
+      "source": "df$isMobile[df$isMobile == TRUE] = 1\ndf$isMobile[df$isMobile == FALSE] = 0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "69bb39c715c0777a3a9bf35eb48b35b75bf10706"
+      },
+      "cell_type": "code",
+      "source": "df$semana[df$semana == 'Sunday'] = 0\ndf$semana[df$semana == 'Saturday'] = 0.15\ndf$semana[df$semana == 'Monday'] = 0.3\ndf$semana[df$semana == 'Tuesday'] = 0.45\ndf$semana[df$semana == 'Wednesday'] = 0.60\ndf$semana[df$semana == 'Thursday'] = 0.85\ndf$semana[df$semana == 'Friday'] = 0.10\ndf$semana<-as.numeric(df$semana)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ba2bc22e2641470dfcdae68933bb70a03f42c912"
+      },
+      "cell_type": "code",
+      "source": "relCountry <- data.frame( 'pais' = unique(df$country), 'num' = norm(as.numeric(unique(df$country))) )\ndf$country <- as.numeric(df$country)\ndf$country <- norm(df$country)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ba45e19d6b874c9bda9bef8be3f8116868c756c4"
+      },
+      "cell_type": "code",
+      "source": "relOS <- data.frame( 'pais' = unique(df$operatingSystem), 'num' = norm(as.numeric(unique(df$operatingSystem))) )\ndf$operatingSystem <- as.numeric(df$operatingSystem)\ndf$operatingSystem <- norm(df$operatingSystem)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9bdfa895b092aa4efbd54861edd6be7c583afcaf"
+      },
+      "cell_type": "code",
+      "source": "relSrc <- data.frame( 'pais' = unique(df$source), 'num' = norm(as.numeric(unique(df$source))) )\ndf$source <- as.numeric(df$source)\ndf$source <- norm(df$source)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "342fe1e1e64857487c045b17cd6c593b634ab4cc"
+      },
+      "cell_type": "markdown",
+      "source": "Separando em teste e treino"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b3a77fe240bba648cf2d9e29ccee2c9b3979f25e"
+      },
+      "cell_type": "code",
+      "source": "nmr=sample(1:nrow(df), as.integer(nrow(df)/10))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "5d9669cd7dc8fdf8c28657dee56bac7b5f4abb26"
+      },
+      "cell_type": "code",
+      "source": "test = df[-nmr,]\ntrain = df[nmr,]",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "85b16df7703a4cb49fcd0e6f93fe84164e71c2d7"
+      },
+      "cell_type": "code",
+      "source": "nrow(train)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "6966c011f594b6c8d31c20a87f102439e0d94deb"
+      },
+      "cell_type": "markdown",
+      "source": "Support Vector Machine"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "302ac0b3e795d9191b133d9ef514e3721d496448"
+      },
+      "cell_type": "code",
+      "source": "library(e1071)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "660e1b04f41619d5cf3c8eecd1a7a8cf1a14121b"
+      },
+      "cell_type": "code",
+      "source": "sm1 <- svm(x=train[2:9], y= train$transactionRevenue, kernel='polynomial', degree=3)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "8acaff755f2dd0c9b482616b402d1594a1b308f2"
+      },
+      "cell_type": "code",
+      "source": "sm2 <- svm(x=train[2:9], y= train$transactionRevenue, kernel='polynomial', degree=4)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "7a8aa4f4c1e237075686f4f774003351772aab34"
+      },
+      "cell_type": "code",
+      "source": "sm3 <- svm(x=train[2:9], y= train$transactionRevenue, kernel='polynomial', degree=5)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "8f1a2e4f490059b87931baa9e41e70a379c7221c"
+      },
+      "cell_type": "code",
+      "source": "sm4 <- svm(x=train[2:9], y= train$transactionRevenue, kernel='polynomial', degree=6)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "44852e4e2b9df7e19b66a6a63a626bfcce1d1564"
+      },
+      "cell_type": "code",
+      "source": "print(sm1)\nprint(sm2)\nprint(sm3)\nprint(sm4)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ceafcb34cdfa798ad5cc2c5b794ec05b2b463664"
+      },
+      "cell_type": "code",
+      "source": "pSm1 <- predict(sm1, test[2:9])\npSm2 <- predict(sm2, test[2:9])\npSm3 <- predict(sm3, test[2:9])\npSm4 <- predict(sm4, test[2:9])",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "75198e9306751b621af986aecb3b72de914355e0"
+      },
+      "cell_type": "code",
+      "source": "\ntabela <- function(n,teste, real){\n    divisor = 0.5\n    \n    totalP = sum(real == 1)\n    totalN = sum(real == 0 )\n    totalTesteP = sum(teste >= divisor)\n    totalTesteN = sum(teste < divisor)\n    \n    return (matrix( ncol=3, byrow = TRUE,\n        c(n, 'positivo', 'negativo',\n        'verdadeiro(%):',sum(teste[real == 1] >= divisor)/totalTesteP , sum(teste[real == 0] < divisor)/totalTesteN,\n        'falso(%):', sum(teste[real == 0] >= divisor)/totalTesteP ,  sum(teste[real == 1] < divisor)/totalTesteN,\n        'acertos(%):',sum(teste[real == 1] >= divisor)/totalP, sum(teste[real == 0] < divisor)/totalN,\n        'teste:', totalTesteP , totalTesteN,\n        'total:', totalP, totalN)\n         )\n    )\n}",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9a33a6dabf7bc2bc9d6b1c975f1f9abb84e39794"
+      },
+      "cell_type": "code",
+      "source": "tabela(1, pSm1, test$transactionRevenue)\ntabela(2, pSm2, test$transactionRevenue)\ntabela(3, pSm3, test$transactionRevenue)\ntabela(4, pSm4, test$transactionRevenue)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "087ccf7f7fd1ea590514824101eedeb33340b705"
+      },
+      "cell_type": "markdown",
+      "source": " Salvando o modelo"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "fd34b78c94f13c564fbe93ff63e06cca31f2584d"
+      },
+      "cell_type": "code",
+      "source": "save(sm1,file = \"sm1.RData\")\nsave(sm2,file = \"sm2.RData\")\nsave(sm3,file = \"sm3.RData\")\nsave(sm4,file = \"sm4.RData\")",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "R",
+      "language": "R",
+      "name": "ir"
+    },
+    "language_info": {
+      "mimetype": "text/x-r-source",
+      "name": "R",
+      "pygments_lexer": "r",
+      "version": "3.4.2",
+      "file_extension": ".r",
+      "codemirror_mode": "r"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 1
+}

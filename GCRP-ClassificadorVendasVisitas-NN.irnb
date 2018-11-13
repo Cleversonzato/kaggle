@@ -1,0 +1,518 @@
+{
+  "cells": [
+    {
+      "metadata": {
+        "_uuid": "4ed382c1f6df06ba8cbb0d706723a62ce12f0b24"
+      },
+      "cell_type": "markdown",
+      "source": "Pengando os dados novamente"
+    },
+    {
+      "metadata": {
+        "_uuid": "0404bb79b45da6669f15e2f84d51be156efd4462",
+        "_execution_state": "idle",
+        "trusted": true
+      },
+      "cell_type": "code",
+      "source": "#bibliotecas necessárias\nlibrary(tidyverse) \nlibrary(reshape)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "196269589c60d6bde6dfd6e559daafe6d6a072fb"
+      },
+      "cell_type": "code",
+      "source": "#importando os dados de treino já pré-processados\ndados <- read.csv('../input/r-flatten-json-columns-to-make-single-data-frame/train_flat.csv')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "99ba150e88418aedc6271674fa1cd6add5e48bf8"
+      },
+      "cell_type": "markdown",
+      "source": "Colocando os \"tipo\" nos dados"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "148017119dba8a851c96384f6925c033727b83cb"
+      },
+      "cell_type": "code",
+      "source": "dados$transactionRevenue[!is.na(dados$transactionRevenue)]<- 1\ndados$transactionRevenue[is.na(dados$transactionRevenue)]<- 0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "f926fd4a2cc7978b43bcfaa82edf60dec31880fe"
+      },
+      "cell_type": "markdown",
+      "source": "Os relevantes a mais, relativos ao tempo, seriam o dia da semana e hora"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "2aa788e05b40ba6a413af405ea514f162d181ab9"
+      },
+      "cell_type": "code",
+      "source": "dados$visitStartTime <- as.POSIXct(dados$visitStartTime, origin=\"1970-01-01\")\ndados$hora <- as.numeric(substr(dados$visitStartTime,12,13)   )\ndados$semana <-weekdays(dados$visitStartTime)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "1baff8c1dae13527f0e4b4bee7dcc6d56a27f430"
+      },
+      "cell_type": "markdown",
+      "source": "Esse aqui é o df com as variaveis seleciononadas"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9e119165bdf37a91d5e6752920691cc29b7719a5"
+      },
+      "cell_type": "code",
+      "source": "df<- dados[c('transactionRevenue','source', 'pageviews', 'hits', 'country', 'isMobile', 'operatingSystem', 'hora', 'semana')]\nhead(df)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "f69ba32fe6c4060c947a445b329d17036109e054"
+      },
+      "cell_type": "code",
+      "source": "df<- df[!is.na(df$pageviews),]",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "77eec564af39aa83cedecc2f5f99c61ec57474dd"
+      },
+      "cell_type": "code",
+      "source": "norm<- function(x){return ((x - min(x)) / (max(x) - min(x))) }",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "2a28ce48769b3927440f59d28812f531f5659952"
+      },
+      "cell_type": "code",
+      "source": "df$hits <- norm(df$hits)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "41622064145bb5331ba06bc646246f29f9d34825"
+      },
+      "cell_type": "code",
+      "source": "df$pageviews <- norm(df$pageviews)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "88f4d65e1e12812886764792c7fd17e41df09b9f"
+      },
+      "cell_type": "code",
+      "source": "df$hora <- norm(df$hora)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "8eca0ad21f3fc942f51ea2d200961f5fbac14c5e"
+      },
+      "cell_type": "markdown",
+      "source": "Transformando as variáveis categóricas em numericas"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "edfda3d74ddd4632ca6cd926e7644f433fe18a2d"
+      },
+      "cell_type": "code",
+      "source": "df$isMobile[df$isMobile == TRUE] = 1\ndf$isMobile[df$isMobile == FALSE] = 0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "69bb39c715c0777a3a9bf35eb48b35b75bf10706"
+      },
+      "cell_type": "code",
+      "source": "df$semana[df$semana == 'Sunday'] = 0\ndf$semana[df$semana == 'Saturday'] = 0.15\ndf$semana[df$semana == 'Monday'] = 0.3\ndf$semana[df$semana == 'Tuesday'] = 0.45\ndf$semana[df$semana == 'Wednesday'] = 0.60\ndf$semana[df$semana == 'Thursday'] = 0.85\ndf$semana[df$semana == 'Friday'] = 0.1",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ba2bc22e2641470dfcdae68933bb70a03f42c912"
+      },
+      "cell_type": "code",
+      "source": "relCountry <- data.frame( 'pais' = unique(df$country), 'num' = norm(as.numeric(unique(df$country))) )\ndf$country <- as.numeric(df$country)\ndf$country <- norm(df$country)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ba45e19d6b874c9bda9bef8be3f8116868c756c4"
+      },
+      "cell_type": "code",
+      "source": "relOS <- data.frame( 'pais' = unique(df$operatingSystem), 'num' = norm(as.numeric(unique(df$operatingSystem))) )\ndf$operatingSystem <- as.numeric(df$operatingSystem)\ndf$operatingSystem <- norm(df$operatingSystem)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9bdfa895b092aa4efbd54861edd6be7c583afcaf"
+      },
+      "cell_type": "code",
+      "source": "relSrc <- data.frame( 'pais' = unique(df$source), 'num' = norm(as.numeric(unique(df$source))) )\ndf$source <- as.numeric(df$source)\ndf$source <- norm(df$source)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "342fe1e1e64857487c045b17cd6c593b634ab4cc"
+      },
+      "cell_type": "markdown",
+      "source": "Separando em teste e treino"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "cb15fd7beda130ed49cb5d8b0d60b924969ab7b5"
+      },
+      "cell_type": "code",
+      "source": "library(keras)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b3a77fe240bba648cf2d9e29ccee2c9b3979f25e"
+      },
+      "cell_type": "code",
+      "source": "nmr=sample(1:nrow(df), as.integer(nrow(df)/7))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "65b6041f741868600327286f1ac8e46ab6ba34b0"
+      },
+      "cell_type": "markdown",
+      "source": "Transformando em categorias"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "de2021a2f7be4db7536c1abff9b64614400d4075"
+      },
+      "cell_type": "code",
+      "source": "df$transactionRevenue <- to_categorical(df$transactionRevenue,2)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "5d9669cd7dc8fdf8c28657dee56bac7b5f4abb26"
+      },
+      "cell_type": "code",
+      "source": "test = df[-nmr,]\ntrain = df[nmr,]",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "6966c011f594b6c8d31c20a87f102439e0d94deb"
+      },
+      "cell_type": "markdown",
+      "source": "Neural Net"
+    },
+    {
+      "metadata": {
+        "_uuid": "da262d4b5f10fcf8a286805d877ec0afbb30e3cd",
+        "trusted": true
+      },
+      "cell_type": "code",
+      "source": "model1 <- keras_model_sequential() \nmodel1 %>% \n  layer_dense(units = 8, activation = 'relu', input_shape = c(8) ) %>% \n  layer_dropout(rate = 0.2) %>% \n  layer_dense(units = 4, activation = 'softmax') %>%\n  layer_dense(units = 2)\n\n\ncb1 <-callback_model_checkpoint('rna_cp1.R', monitor = \"val_loss\", verbose = 0,\n  save_best_only = TRUE, save_weights_only = FALSE, mode = 'min')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9ec9636914b0b5d9622ecc5e68ce2f958485baef"
+      },
+      "cell_type": "code",
+      "source": "model2 <- keras_model_sequential() \nmodel2 %>% \n  layer_dense(units = 8, activation = 'relu', input_shape = c(8) ) %>% \n  layer_dropout(rate = 0.2) %>% \n  layer_dense(units = 4, activation = 'relu') %>%\n  layer_dropout(rate = 0.2) %>% \n  layer_dense(units = 4, activation = 'sigmoid') %>%\n  layer_dense(units = 2)\n\n\ncb2 <-callback_model_checkpoint('rna_cp2.R', monitor = \"val_loss\", verbose = 0,\n  save_best_only = TRUE, save_weights_only = FALSE, mode = 'min')\n",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "cdc04298520250fd7b03f941eed598ad0ea0e481"
+      },
+      "cell_type": "code",
+      "source": "model3 <- keras_model_sequential() \nmodel3 %>% \n  layer_dense(units = 8, activation = 'softmax', input_shape = c(8) ) %>% \n  layer_dense(units = 2)\n\ncb3 <-callback_model_checkpoint('rna_cp3.R', monitor = \"val_loss\", verbose = 0,\n  save_best_only = TRUE, save_weights_only = FALSE, mode = 'min')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "bce08e2ec0dfb864c4e7b7859a7f037bba38a93f"
+      },
+      "cell_type": "code",
+      "source": "model4 <- keras_model_sequential() \nmodel4 %>% \n  layer_dense(units = 8, activation = 'relu', input_shape = c(8) ) %>% \n  layer_dropout(rate = 0.2) %>% \n  layer_dense(units = 6, activation = 'relu') %>%\n  layer_dropout(rate = 0.2) %>% \n  layer_dense(units = 4, activation = 'sigmoid') %>%\n  layer_dense(units = 2)\n\ncb4 <-callback_model_checkpoint('rna_cp4.R', monitor = \"val_loss\", verbose = 0,\n  save_best_only = TRUE, save_weights_only = FALSE, mode = 'min')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "0c8cbc83be8d6d51a9a9ea3f184728e25873cec3"
+      },
+      "cell_type": "code",
+      "source": "model1 %>% compile(\n  loss = 'categorical_crossentropy',\n  optimizer = 'rmsprop',\n  metrics = 'binary_crossentropy'\n)\n\nmodel2 %>% compile(\n  loss = 'categorical_crossentropy',\n  optimizer = 'rmsprop',\n  metrics = 'binary_crossentropy'\n)\nmodel3 %>% compile(\n  loss = 'categorical_crossentropy',\n  optimizer = 'rmsprop',\n  metrics = 'categorical_crossentropy'\n)\nmodel4 %>% compile(\n  loss = 'categorical_crossentropy',\n  optimizer = 'rmsprop',\n  metrics = 'categorical_crossentropy'\n)\n",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "71876524ed41c895ad5b01ca6f73749d4c531672"
+      },
+      "cell_type": "code",
+      "source": "history1<- fit( model1, \n  x=as.matrix(train[2:9]), y=as.matrix(train$transactionRevenue), \n  epochs = 200, verbose =1,\n  validation_data= list(as.matrix(test[2:9]),as.matrix(test$transactionRevenue) ) ,\n  callbacks  = cb1\n)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "eb57d3fe3e8e8dbc4bda656901e08de1ead60fc1"
+      },
+      "cell_type": "code",
+      "source": "history2<- fit( model1, \n  x=as.matrix(train[2:9]), y=as.matrix(train$transactionRevenue), \n  epochs = 200, verbose =1,\n  validation_data= list(as.matrix(test[2:9]),as.matrix(test$transactionRevenue) ) ,\n  callbacks  = cb2\n)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "31bb6e466f23dbcb50ca9dc6056a65c1e9dc5200"
+      },
+      "cell_type": "code",
+      "source": "history3<- fit( model1, \n  x=as.matrix(train[2:9]), y=as.matrix(train$transactionRevenue), \n  epochs = 200, verbose =1,\n  validation_data= list(as.matrix(test[2:9]),as.matrix(test$transactionRevenue) ) ,\n  callbacks  = cb3\n)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "bbd3363a10a4ce24bf9f0db2f8c0092f820b12db"
+      },
+      "cell_type": "code",
+      "source": "history4<- fit( model1, \n  x=as.matrix(train[2:9]), y=as.matrix(train$transactionRevenue), \n  epochs = 200, verbose =1,\n  validation_data= list(as.matrix(test[2:9]),as.matrix(test$transactionRevenue) ) ,\n  callbacks  = cb4\n)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ca3a30a68127911930f7064423a3a2a50e112f42"
+      },
+      "cell_type": "code",
+      "source": "print(history1)\nprint(history2)\nprint(history3)\nprint(history4)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "34d3c9cb9dc5d69689c7c4daecb19125bc896542"
+      },
+      "cell_type": "code",
+      "source": "plot(history1)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ce191ed921b887218287884efe1cabbf2788b8f7"
+      },
+      "cell_type": "code",
+      "source": "plot(history2)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "428862a116a009697bcc9df84f31b3503fe1ffab"
+      },
+      "cell_type": "code",
+      "source": "plot(history3)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "54b44aa3e8b40e4fdcf3f4a8356edb13d6b79f1f"
+      },
+      "cell_type": "code",
+      "source": "plot(history4)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9c19e911fcabed7d3174d9798b734ca18503f473"
+      },
+      "cell_type": "code",
+      "source": "t1<-model1 %>% predict_classes(as.matrix(test[2:9]))\nt2<-model2 %>% predict_classes(as.matrix(test[2:9]))\nt3<-model3 %>% predict_classes(as.matrix(test[2:9]))\nt4<-model4 %>% predict_classes(as.matrix(test[2:9]))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "393073ddb2d19120f861c02dad0646cffb78cf98"
+      },
+      "cell_type": "code",
+      "source": "tabela <- function(n,teste, real){\n    totalP = sum(real == 1)\n    totalN = sum(real == 0 )\n    totalTesteP = sum(teste == 1)\n    totalTesteN = sum(teste == 0)\n \n    return (matrix( ncol=3, byrow = TRUE,\n        c(n, 'positivo', 'negativo',\n        'verdadeiro(%):',sum(teste[real == 1] == 1)/totalTesteP , sum(teste[real==0] ==0)/totalTesteN,\n        'falso(%):', sum(teste[real == 0] == 1)/totalTesteP ,  sum(teste[real == 1] == 0)/totalTesteN,\n        'acertos(%):',sum(teste[real == 1] == 1)/totalP, sum(teste[real == 0] == 0)/totalN,\n        'teste:', totalTesteP , totalTesteN,\n        'total:', totalP, totalN)\n         )\n    )\n}",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "fc2ea89dfa1fc2644c33b80be43ada41c98eb58f"
+      },
+      "cell_type": "code",
+      "source": "tabela(1,t1, test$transactionRevenue[,2])\ntabela(2,t2, test$transactionRevenue[,2])\ntabela(3,t3, test$transactionRevenue[,2])\ntabela(4,t4, test$transactionRevenue[,2])",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "6cbeb0caf9484fb2b9df8c0ce516249e8dd1d423"
+      },
+      "cell_type": "code",
+      "source": "matrix(c('Teste','Real',t1, test$transactionRevenue[,2]),ncol=2, byrow=TRUE)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "55278e77e493009fa2bf8055ef8d739f8d5f3f9a"
+      },
+      "cell_type": "code",
+      "source": "matrix(c('Teste','Real',t2, test$transactionRevenue[,2]),ncol=2, byrow=TRUE)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "a088f4a460959bbb93bdea371ca1dc570312aff7"
+      },
+      "cell_type": "code",
+      "source": "matrix(c('Teste','Real',t3, test$transactionRevenue[,2]),ncol=2, byrow=TRUE)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "306d904bc4807a34e017606047d1423f96a15ea5"
+      },
+      "cell_type": "code",
+      "source": "ggplot(data= as.data.frame(t3) )+\ngeom_tile(aes(x=length(t3), y=t3 ))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "1d6ddd6390e0d614fdf5aeed19c0086cfbf9eeee"
+      },
+      "cell_type": "code",
+      "source": "matrix(c('Teste','Real',t4, test$transactionRevenue[,2]),ncol=2, byrow=TRUE)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "58d92f002e13eed7ae5975e835ad7e3897406db8"
+      },
+      "cell_type": "code",
+      "source": "save_model_hdf5(model1, 'rna1.R')\nsave_model_weights_hdf5(model1, 'rna1_w.R')\n\nsave_model_hdf5(model2, 'rna2.R')\nsave_model_weights_hdf5(model2, 'rna2_w.R')\n\nsave_model_hdf5(model3, 'rna3.R')\nsave_model_weights_hdf5(model3, 'rna3_w.R')\n\nsave_model_hdf5(model4, 'rna4.R')\nsave_model_weights_hdf5(model4, 'rna4_w.R')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "1a2e9e8bb4f5c7e58821ff95913c320950bc86bb"
+      },
+      "cell_type": "code",
+      "source": "model3<-load_model_hdf5('../input/classificadores-venda-visita-nn/rna3.R')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "637d2243d3446995f7b3dc672b99e462f026ed9f"
+      },
+      "cell_type": "code",
+      "source": "",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "R",
+      "language": "R",
+      "name": "ir"
+    },
+    "language_info": {
+      "mimetype": "text/x-r-source",
+      "name": "R",
+      "pygments_lexer": "r",
+      "version": "3.4.2",
+      "file_extension": ".r",
+      "codemirror_mode": "r"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 1
+}

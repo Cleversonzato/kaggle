@@ -1,0 +1,520 @@
+{
+  "cells": [
+    {
+      "metadata": {
+        "_uuid": "0404bb79b45da6669f15e2f84d51be156efd4462",
+        "_execution_state": "idle",
+        "trusted": true
+      },
+      "cell_type": "code",
+      "source": "#bibliotecas necessárias\nlibrary(tidyverse) \nlibrary(reshape)\nlibrary(assertthat)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "196269589c60d6bde6dfd6e559daafe6d6a072fb"
+      },
+      "cell_type": "code",
+      "source": "#importando os dados de treino já pré-processados\n#inicio <- timeStep( )\ndados <- read.csv('../input/r-flatten-json-columns-to-make-single-data-frame/train_flat.csv')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "23fe5d2dc41d568bf727daa989ea3274a49d9a76"
+      },
+      "cell_type": "code",
+      "source": "## identifica colunas\nnames(dados)\n\n# tipos de cada coluna\nsapply(dados, typeof)\n\n# transforma fullVisitorId em string para que a variável seja reconhecida como um ID único\ndados_ajuste <-  toString(dados$fullVisitorId)\n\n# verifica se a variável mudou de tipo\ntypeof(dados_ajuste)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "c8b641d69887826cfa989f5b1a904ba2e3e9ddcd"
+      },
+      "cell_type": "code",
+      "source": "nrow(group_by(dados,toString(fullVisitorId)))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "764b8e4f619e80a2696b93291cf0eb7f73ae014c"
+      },
+      "cell_type": "code",
+      "source": "nrow(dados)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "8baad1ea7f1f0c8c1a0ef1ef0145dc6b798cc251"
+      },
+      "cell_type": "code",
+      "source": "dados$transactionRevenue[is.na(dados$transactionRevenue)] <-0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "d6248f985f360e4024ead704a9785971f5c8e2d6"
+      },
+      "cell_type": "code",
+      "source": "temp = arrange(dados, transactionRevenue)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ba43eaed7e5afda55119be7289e61a8b347ea45c"
+      },
+      "cell_type": "code",
+      "source": "ggplot(data=temp)+\ngeom_point(aes(x=1:nrow(temp), y=transactionRevenue, color= transactionRevenue))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "a1f814539e83ef729af7150c1846c4906146dde4"
+      },
+      "cell_type": "code",
+      "source": "ggplot(data=temp)+\ngeom_line(aes(x=1:nrow(temp), y=cumsum(transactionRevenue), color= transactionRevenue))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b1072d71d6fba6906daffbe3e1a539c6e26c2ad7"
+      },
+      "cell_type": "code",
+      "source": "ggplot(data=temp)+\ngeom_boxplot(aes(group=1, y=transactionRevenue, color = transactionRevenue))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "f4c8112ddb547358c48eccd35cf5b6f4131cfcde"
+      },
+      "cell_type": "markdown",
+      "source": "Retirando quem não gastou nada"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9570eb58e387dd8280125ca657b6565487eda6f5"
+      },
+      "cell_type": "code",
+      "source": "temp <- temp[(temp$transactionRevenue != 0),]",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "2c8a0fa33c68280ceacc45899e5de13e32d90da1"
+      },
+      "cell_type": "code",
+      "source": "ggplot(data=temp)+\ngeom_point(aes(x=1:nrow(temp), y=transactionRevenue, color= transactionRevenue))\nggplot(data=temp)+\ngeom_line(aes(x=1:nrow(temp), y=cumsum(transactionRevenue), color= transactionRevenue))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "199a5e07e31909f77c462b81a137138260e540c9"
+      },
+      "cell_type": "code",
+      "source": "ggplot(data=temp)+\ngeom_boxplot(aes(group=1, y=transactionRevenue))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "e2e93f038b4d563bcb5abf6f3fa537f7c7af6651"
+      },
+      "cell_type": "markdown",
+      "source": "Agora, qual o melhor ponto para traçar uma divisão enter categorias?"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "221e0febec4a4e4a4d8f26d00d9712e05f58b96f"
+      },
+      "cell_type": "code",
+      "source": "ggplot(data=temp)+\ngeom_boxplot(aes(group=1, y=cumsum(transactionRevenue)))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "6bbe1f3fadac1044d71b725ac1e17c2c55ff185c"
+      },
+      "cell_type": "code",
+      "source": "tSum = summary(cumsum(dados$transactionRevenue))\ntSum",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "945f451f695065f35229590f9709076aa49dec58"
+      },
+      "cell_type": "markdown",
+      "source": "Pegar a partir do terceiro quartil?"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "180aa5723f42408607cd0ca56381f0d0d7113ab7"
+      },
+      "cell_type": "code",
+      "source": "tSum[5]",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "3c765090466a7dcd11ab737a3b5134d9ce9844c2"
+      },
+      "cell_type": "markdown",
+      "source": "limpar os dados antes..."
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "4394b7a3c4b315793c84119a826b9afdb79158a3"
+      },
+      "cell_type": "code",
+      "source": "t<- map(temp, ~sum((.)=='not available in demo dataset' ))\nt <- t == nrow(temp)\ncat ('antes:', ncol(temp) )\nt[is.na(t)]<- FALSE\ntemp<- temp[, !t]\ncat ('\\ndepois:', ncol(temp) )\nhead(temp)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "5ddcc255d2d3d41742224208dfa6652bde9f21a1"
+      },
+      "cell_type": "code",
+      "source": "i=0\ntx=0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ee2b4fa95bda0790d34fa6d7a03c0bc188d36c7b"
+      },
+      "cell_type": "code",
+      "source": "while(tx < tSum[5] ){\n    i=i+1\n    tx=temp$transactionRevenue[i] +tx  \n}",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "be6db297a841eeb882ede6ea3aee8627ef05133d"
+      },
+      "cell_type": "code",
+      "source": "menores <- temp[1:i,]",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "a92d9306c56dd52e9a33e0e53096d2fe8f6af122"
+      },
+      "cell_type": "code",
+      "source": "maiores <-temp[(i+1):nrow(temp), ]",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ed70b10b64244736c3bbbd999189a31ba2f5db6c"
+      },
+      "cell_type": "code",
+      "source": "nrow(temp)\nnrow(maiores)\nnrow(menores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "e136f807c912c1930b56ba0ddd16a585822a1d13"
+      },
+      "cell_type": "code",
+      "source": "summary(maiores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "10b0d997210fca92cc2583816320f393046f7414"
+      },
+      "cell_type": "code",
+      "source": "summary(menores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "08fb43533df6e46aab9eacf24b6fe05e58a58076"
+      },
+      "cell_type": "code",
+      "source": "graficoBar <- function(nome, menores, maiores, minY=NA, maxY=NA){    \n    gp<-ggplot()+\n    geom_bar(data=menores,  aes_string(x=nome, y = \"..count../sum(..count..)\" , colour=shQuote(\"Menores\"), alpha = 0.8))+\n    geom_bar(data=maiores,  aes_string(x=nome, y = \"..count../sum(..count..)\" , colour=shQuote(\"Maiores\"), alpha = 0.8))+\n    theme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\n    guides(alpha = FALSE)+   \n    ggtitle(nome)\n    \n  if( is.numeric(minY) || is.numeric(maxY) ){\n        gp <-gp + ylim(minY,maxY)\n    }\n    \n  return(gp)\n}",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "5dc9bee734d095934e3942dbc595d725bb511fd0"
+      },
+      "cell_type": "code",
+      "source": "graficoBox <- function(nome, menores, maiores, minY=NA, maxY=NA){        \n    gp <-ggplot() +\n    geom_boxplot(data=menores,  aes_string(x=1, y=nome, colour=shQuote(\"Menores\")))+\n    geom_boxplot(data=maiores,  aes_string(x=2, y=nome, colour=shQuote(\"Maiores\")))+   \n    ggtitle(nome)\n    \n    if( is.numeric(minY) || is.numeric(maxY) ){\n        gp <-gp + ylim(minY,maxY)\n    }\n    \n    return(gp)\n}\n\n",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "701d870309ef2b8977f8c2438eeb54f7914a5102"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('visitNumber',menores, maiores,)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "65f2206b3706687fa25ab6def6332e420ae9a033"
+      },
+      "cell_type": "code",
+      "source": "menores$mudadoStartTime <- as.POSIXct(menores$visitStartTime, origin=\"1970-01-01\")\nmaiores$mudadoStartTime <- as.POSIXct(maiores$visitStartTime, origin=\"1970-01-01\")\nhead(maiores$mudadoStartTime)\nhead(menores$mudadoStartTime)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "a7de1c5d970ab66db23fc160826fa4165e35d993"
+      },
+      "cell_type": "code",
+      "source": "tempD <- data.frame(   \n    hora<- substr(menores$mudadoStartTime,12,13),\n    min<- substr(menores$mudadoStartTime,15,16),\n    dia<- substr(menores$mudadoStartTime,8,10),\n    mes<- months(menores$mudadoStartTime),    \n    semana<-weekdays(menores$mudadoStartTime),\n    pais <- menores$country\n    )\n\ntemp2D <- data.frame(    \n    hora<- substr(maiores$mudadoStartTime,12,13),\n    min<- substr(maiores$mudadoStartTime,15,16),\n    dia<- substr(maiores$mudadoStartTime,8,10),\n    mes<- months(maiores$mudadoStartTime),    \n    semana<-weekdays(maiores$mudadoStartTime),\n    pais <- maiores$country\n    )",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "4ea5177b636238559f201078cc3296748b123283"
+      },
+      "cell_type": "code",
+      "source": "names(tempD)<-  c('hora','min', 'dia', 'mes', 'semana', 'pais' )\nnames(temp2D)<-  c('hora','min', 'dia', 'mes', 'semana', 'pais' )",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "a31c3900ad5e141761e0cb8049e6121042aa002e"
+      },
+      "cell_type": "code",
+      "source": "ggplot()+\n    geom_bar(data=tempD,  aes(x=hora, y = ..count../sum(..count..) , colour='Menores', alpha = 0.8))+\n    geom_bar(data=temp2D,  aes(x=hora, y = ..count../sum(..count..) , colour='Maiores', alpha = 0.8))+\n    theme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ), legend.position=\"none\")+   \n    guides(alpha = FALSE) +\n    ggtitle('visitStartTime: hora')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "defb3b3b0bc09aa3757a8e9b8d3862fa1f5fa470"
+      },
+      "cell_type": "code",
+      "source": "ggplot()+\n    geom_bar(data=tempD,  aes(x=dia, y = ..count../sum(..count..) , colour='Menores', alpha = 0.8))+\n    geom_bar(data=temp2D,  aes(x=dia, y = ..count../sum(..count..) , colour='Maiores', alpha = 0.8))+\n    theme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+   \n    guides(alpha = FALSE) +\n    ggtitle('visitStartTime: dia')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "6883e8ca2f7094e106c64a90ad0a0bb2ebb5a75a"
+      },
+      "cell_type": "code",
+      "source": "ggplot()+\n    geom_bar(data=tempD,  aes(x=semana, y = ..count../sum(..count..) , colour='Menores', alpha = 0.8))+\n    geom_bar(data=temp2D,  aes(x=semana, y = ..count../sum(..count..) , colour='Maiores', alpha = 0.8))+\n    theme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+   \n    guides(alpha = FALSE) +\n    ggtitle('visitStartTime: semana')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "51eb22fd9c8a98f88dca509fca89bd1391abc363"
+      },
+      "cell_type": "code",
+      "source": "ggplot()+\n    geom_bar(data=tempD,  aes(x=mes, y = ..count../sum(..count..) , colour='Menores', alpha = 0.8))+\n    geom_bar(data=temp2D,  aes(x=mes, y = ..count../sum(..count..) , colour='Maiores', alpha = 0.8))+\n    theme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+   \n    guides(alpha = FALSE) +\n    ggtitle('visitStartTime: mes')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "1ae808d3f5f0b299980aac37e9a10a23da7e27e9"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('browser',menores, maiores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "48623cda504f9eb21442339e8a9da6a5f5c87ada"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('isMobile',menores, maiores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "16eb4147e132bccefa17dc80e1bee1a8516e0211"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('continent',menores, maiores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "af85d4a00d1b97f68a8ce4f55d8a06a1bfb66900"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('country',menores, maiores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "0db31db4a8fa87fa5ebc475a6ef74035b4877767"
+      },
+      "cell_type": "code",
+      "source": "graficoBox('hits',menores, maiores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "8533d94e9671ae1f2d0b4fbddc6864de07f2571d"
+      },
+      "cell_type": "code",
+      "source": "graficoBox('pageviews',menores, maiores)\n",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "7e177c84e33c1aa1b0772901f6fd6c2da8c2bf21"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('campaign',menores, maiores)\n",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "47e24679aea80a20fef6844e4360996b5878851c"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('source',menores, maiores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "8b41d4ed2bf2d7f2b9cf9494e26a3192ae87af74"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('medium',menores, maiores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9d12a5a09acad982793eb6caca78e6f2f019279a"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('isTrueDirect',menores, maiores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "eb0b8047d7b9f6e2366e2392a762d007ccdca55e"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('adwordsClickInfo.adNetworkType',menores, maiores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "1bcb27758655e161a9dee11bec18a655c2862f2d"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('adwordsClickInfo.isVideoAd',menores, maiores)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "f3d0e44ebacd8d1c2ceb8f11433fe874e71ec537"
+      },
+      "cell_type": "code",
+      "source": "",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "R",
+      "language": "R",
+      "name": "ir"
+    },
+    "language_info": {
+      "mimetype": "text/x-r-source",
+      "name": "R",
+      "pygments_lexer": "r",
+      "version": "3.4.2",
+      "file_extension": ".r",
+      "codemirror_mode": "r"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 1
+}

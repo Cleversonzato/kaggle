@@ -1,0 +1,371 @@
+{
+  "cells": [
+    {
+      "metadata": {
+        "_uuid": "0404bb79b45da6669f15e2f84d51be156efd4462",
+        "_execution_state": "idle",
+        "trusted": true
+      },
+      "cell_type": "code",
+      "source": "#bibliotecas necessárias\nlibrary(tidyverse) \nlibrary(reshape)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "196269589c60d6bde6dfd6e559daafe6d6a072fb"
+      },
+      "cell_type": "code",
+      "source": "#importando os dados de treino já pré-processados\ndados <- read.csv('../input/r-flatten-json-columns-to-make-single-data-frame/train_flat.csv')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b75acdf7b98894def1164b22349ddc611ec37b0e"
+      },
+      "cell_type": "code",
+      "source": "dados$visitStartTime <- as.POSIXct(dados$visitStartTime, origin=\"1970-01-01\")\ndados$hora <- as.numeric(substr(dados$visitStartTime,12,13)   )\ndados$semana <-weekdays(dados$visitStartTime)\ndados$mes<- months(dados$visitStartTime)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "55361b80d1151bc81a57dcb029b43aa7bb2527db"
+      },
+      "cell_type": "markdown",
+      "source": "Verificando os NAs"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "f53ca748ec83a8def12b03537c33bfe3b9666cf9"
+      },
+      "cell_type": "code",
+      "source": "vendas <- dados[!is.na(dados$transactionRevenue),]",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "233cb4fd94953e6d9ebc3a1aa5abb448290116fa"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=operatingSystem , colour=operatingSystem))+\ngeom_point()+\n\n#geom_smooth()+\nfacet_wrap(~browser)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('SO + Bowser')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "8b71ff5f12a70fad0c683487c9e9b1d952d51a68"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=operatingSystem , colour=operatingSystem))+\n#geom_boxplot()+\nstat_summary(fun.y= mean, geom='bar' )+\n#geom_smooth()+\nfacet_wrap(~browser)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('media SO + Bowser')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "00f70d29568a1ce3b618be24c686ed0644616495"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=metro , colour=country))+\n#geom_boxplot()+\ngeom_point()+\n#geom_smooth()+\n#facet_wrap(~metro)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ), legend.position=\"botton\")+\nggtitle('Metro + Country')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "23620d7bd5b2373bfa27f81810b5fdbf8288c828"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=country , colour=country))+\ngeom_boxplot()+\n#geom_point()+\n#geom_smooth()+\n#facet_wrap(~metro)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ), legend.position=\"bottom\")+\nggtitle('Continent + Country')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "01cd62eaf78cff7a3f43f711d047696e6b97edcc"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=country , colour=country))+\nstat_summary(aes(group=1), fun.y= mean, geom='bar' )+\n#geom_point()+\n#geom_smooth()+\n#facet_wrap(~metro)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ), legend.position=\"bottom\")+\nggtitle('media Country')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "8544635926f0928f43a1b0f3708d03f2ad628186"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=campaign, color=networkDomain ))+\n#geom_boxplot()+\ngeom_point()+\n#geom_smooth()+\n#facet_wrap(~campaign)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ), legend.position=\"botton\")+\nggtitle('campaign+ networkDomain')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "02c4f925cd0f1ae8cb1c6ff84c2a6b5d7ceaafe8"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=campaign, color=campaign ))+\n#geom_boxplot()+\nstat_summary(aes(group=1), fun.y= mean, geom='line' )+\n#geom_smooth()+\n#facet_wrap(~campaign)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('media: campaign')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "16fb29847ea10ac01be2d69aea3bee841f8db136"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=networkDomain, color=networkDomain ))+\n#geom_boxplot()+\nstat_summary(aes(group=1), fun.y= mean, geom='line' )+\n#geom_smooth()+\n#facet_wrap(~campaign)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ), legend.position=\"botton\")+\nggtitle('media: networkDomain')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "5bd5b915572610cb776114369f98336c01aaa4e3"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=hora, color=hora ))+\nstat_summary(aes(group=1), fun.y= mean, geom='line' )+\n#geom_point()+\n#geom_smooth()+\nfacet_wrap(~mes)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('media: hora+ mes')\n",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "bdb095ccc66c41ec2750c7e549c941ed4e4b1100"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=semana, color =  hora))+\n#geom_boxplot()+\ngeom_point()+\n#geom_smooth()+\nfacet_wrap(~mes)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('dia+ mes')\n#visitStartTime \t/hora, semana, mes",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "07f6d9d97a0ac20379de57c403b531c99a8409db"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=hora, color = hora))+\n#geom_boxplot()+\ngeom_point()+\ngeom_smooth()+\nfacet_wrap(~semana)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('semana+ hora')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "scrolled": true,
+        "_uuid": "c8663b014ad96e74f328dcdde1d8764c9f44db32"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=semana, color=semana ))+\n#geom_boxplot()+\nstat_summary(aes(group=1), fun.y= mean, geom='line' )+\n#facet_wrap(~semana)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('media por dia da semana')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "54e0033faa5a164d0706e19eb246502e284514a6"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=semana, color = hora))+\n#geom_boxplot()+\ngeom_point()+\n#geom_smooth()+\n#facet_wrap(~semana)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('vendas por dia')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "7da0e80b9e3a0eeac8213ffed8a021a0ef83cdd2"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=hora,  color = hora))+\nstat_summary(aes(group=1), fun.y= mean, geom='line' )+\n#geom_point()+\n#geom_smooth()+\n#facet_wrap(~hora)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('media por hora')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "3fa79cdb3523f050ea2cdc5c393f7b673493bceb"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=hora, colour=hora))+\n#geom_bar()+\ngeom_point()+\n#geom_smooth()+\n#facet_wrap(~hora)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('vendas por hora')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "d583db9be109e8798abb318dc24a9337378f7545"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=visitNumber, colour=visitNumber, alpha=0.8))+\n#geom_bar()+\ngeom_point()+\ngeom_smooth()+\n#facet_wrap(~hora)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('vendas por visitNumber')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "79eb4f5bcc4c4d204e26b7edcb957ec5ad02fb10"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=visitNumber, colour=visitNumber, alpha=0.8))+\n#geom_bar()+\nstat_summary(aes(group=1), fun.y=mean, geom=\"line\")+\n#facet_wrap(~hora)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('media por visitNumber')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "2f8996a7a384548dcaf9e16c905efb417fb04927"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=hits, color=hits ))+\ngeom_point()+\ngeom_smooth()+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('vendas por hits')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "14e99291aae751c5d7a9ce9ea0355ec98e613df7"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=hits, colour=hits))+\n#geom_bar()+\nstat_summary(aes(group=1), fun.y=mean, geom=\"line\")+\n#facet_wrap(~hora)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('media por hits')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "32e96fb5887934283adb3f05386ffebac7b1f06e"
+      },
+      "cell_type": "markdown",
+      "source": "fique em duvida com o hits, mas acho que não tem relação"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "a4d20b9af57af133dd3d4224f562c32c282876a6"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=pageviews , color=pageviews, alpha=0.8  ))+\ngeom_point()+\ngeom_smooth()+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('vendas por pageviews')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "75d33da9c0960142ddf98306a6a0455ca29bb01b"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=pageviews, colour=pageviews))+\n#geom_bar()+\nstat_summary(aes(group=1), fun.y=mean, geom=\"line\")+\n#facet_wrap(~hora)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('media por pageviews')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "17ad3f9fa1235d7626084d5ee8271b37ab7bb6a1"
+      },
+      "cell_type": "markdown",
+      "source": "fique em duvida com o pageviews tbm. Acho que tem relação com o hits, mas não necessariamente com o revenue"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "94ed4685ac983cb576274897d9bc41906fb26c06"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=medium , color=medium ))+\ngeom_point()+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('vendas por medium')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "58bfdfa1c27caef97110c8aa5f4401cba50b0bd0"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=medium, colour=medium))+\n#geom_bar()+\nstat_summary(aes(group=1), fun.y=mean, geom=\"line\")+\n#facet_wrap(~hora)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('media por medium')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "e66feb1697970354ae80aa353d43ccf3bdfc2cb5"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=source , color=source ))+\ngeom_point()+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ), legend.position='bottom')+\nggtitle('vendas por source')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "8e9425a0497273503332a14419dfaf94ee0270e7"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=source, colour=source))+\n#geom_bar()+\nstat_summary(aes(group=1), fun.y=mean, geom=\"line\", )+\n#facet_wrap(~hora)+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ),legend.position='bottom')+\nggtitle('media por source')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "bee4cf1f5f93f16c79afede28cba03221ce58914"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=isMobile , color=isMobile ))+\ngeom_point()+\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('vendas por isMobile')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "da3f348c6db2e1428da8c1e473d54f290239bcd5"
+      },
+      "cell_type": "code",
+      "source": "vendas %>%\nggplot(aes(y=transactionRevenue, x=isMobile , color=isMobile ))+\ngeom_boxplot()+\nylim(0, 100000000)\ntheme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\nggtitle('boxplot para isMobile')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "de939089f1952f911d28aec93d8dfd4151890fef"
+      },
+      "cell_type": "markdown",
+      "source": "Analisando, as correlações selecionadas foram:\n\n* browser \n* country\n* campaign\n* hora\n*  semana\n* mes\n* operatingSystem \n* networkDomain\n* visitNumber\n* medium\n* source\n* isMobile"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "e9a4f56e6abe47a56948bd75103904ed8fa09623"
+      },
+      "cell_type": "code",
+      "source": "",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "R",
+      "language": "R",
+      "name": "ir"
+    },
+    "language_info": {
+      "mimetype": "text/x-r-source",
+      "name": "R",
+      "pygments_lexer": "r",
+      "version": "3.4.2",
+      "file_extension": ".r",
+      "codemirror_mode": "r"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 1
+}

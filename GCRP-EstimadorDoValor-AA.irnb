@@ -1,0 +1,465 @@
+{
+  "cells": [
+    {
+      "metadata": {
+        "_uuid": "4ed382c1f6df06ba8cbb0d706723a62ce12f0b24"
+      },
+      "cell_type": "markdown",
+      "source": "Pengando os dados novamente"
+    },
+    {
+      "metadata": {
+        "_uuid": "0404bb79b45da6669f15e2f84d51be156efd4462",
+        "_execution_state": "idle",
+        "trusted": true
+      },
+      "cell_type": "code",
+      "source": "#bibliotecas necessárias\nlibrary(tidyverse) \nlibrary(reshape)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "196269589c60d6bde6dfd6e559daafe6d6a072fb"
+      },
+      "cell_type": "code",
+      "source": "#importando os dados de treino já pré-processados\ndados <- read.csv('../input/r-flatten-json-columns-to-make-single-data-frame/train_flat.csv')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "f2bc08322a34e208eb5c8fd94dca8f57fe294678"
+      },
+      "cell_type": "markdown",
+      "source": "Pegando so os com valores de venda\n"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "f260958000f3d72db4203db2ffa88023dcd35891"
+      },
+      "cell_type": "code",
+      "source": "dados<-dados[!is.na(dados$transactionRevenue),]",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "99ba150e88418aedc6271674fa1cd6add5e48bf8"
+      },
+      "cell_type": "markdown",
+      "source": "Colocando os \"tipo\" nos dados"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "2aa788e05b40ba6a413af405ea514f162d181ab9"
+      },
+      "cell_type": "code",
+      "source": "dados$visitStartTime <- as.POSIXct(dados$visitStartTime, origin=\"1970-01-01\")\ndados$hora <- as.numeric(substr(dados$visitStartTime,12,13)   )\ndados$semana <-weekdays(dados$visitStartTime)\ndados$mes<-months(dados$visitStartTime)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "1baff8c1dae13527f0e4b4bee7dcc6d56a27f430"
+      },
+      "cell_type": "markdown",
+      "source": "Esse aqui é o df com as variaveis seleciononadas"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9e119165bdf37a91d5e6752920691cc29b7719a5"
+      },
+      "cell_type": "code",
+      "source": "df<- dados[c('transactionRevenue','browser','country', 'campaign','hora','semana', 'mes','operatingSystem','networkDomain', 'visitNumber',\n    'medium','source','isMobile')]\nhead(df)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "a35b0b3b1a2642492cdda8f9a458356e86490f05"
+      },
+      "cell_type": "markdown",
+      "source": "Normalizações de dados"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "77eec564af39aa83cedecc2f5f99c61ec57474dd"
+      },
+      "cell_type": "code",
+      "source": "norm<- function(x){return ((x - min(x)) / (max(x) - min(x))) }",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "2a28ce48769b3927440f59d28812f531f5659952"
+      },
+      "cell_type": "code",
+      "source": "df$transactionRevenue <- norm(df$transactionRevenue)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "41622064145bb5331ba06bc646246f29f9d34825"
+      },
+      "cell_type": "code",
+      "source": "df$hora <- norm(df$hora)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "88f4d65e1e12812886764792c7fd17e41df09b9f"
+      },
+      "cell_type": "code",
+      "source": "df$visitNumber <- norm(df$visitNumber)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "8eca0ad21f3fc942f51ea2d200961f5fbac14c5e"
+      },
+      "cell_type": "markdown",
+      "source": "Transformando as variáveis categóricas em numericas"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "edfda3d74ddd4632ca6cd926e7644f433fe18a2d"
+      },
+      "cell_type": "code",
+      "source": "df$isMobile[df$isMobile == TRUE] = 1\ndf$isMobile[df$isMobile == FALSE] = 0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b6cb96d285957cd6a505ae4f8cd6d195478f0dd3"
+      },
+      "cell_type": "code",
+      "source": "relBrowser <- data.frame( 'browser' = unique(df$browser), 'num' = norm(as.numeric(unique(df$browser))) )\ndf$browser <- as.numeric(df$browser)\ndf$browser <- norm(df$browser)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "bad9cfda9c41ece7e1c9c8410134be4d94c1b74e"
+      },
+      "cell_type": "code",
+      "source": "relNetworkDomain <- data.frame( 'networkDomain' = unique(df$networkDomain), 'num' = norm(as.numeric(unique(df$networkDomain))) )\ndf$networkDomain <- as.numeric(df$networkDomain)\ndf$networkDomain <- norm(df$networkDomain)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "79ef094b5627caa1b5efdb8aa52b913cacea0d08"
+      },
+      "cell_type": "code",
+      "source": "relMedium <- data.frame( 'operatingSystem' = unique(df$medium), 'num' = norm(as.numeric(unique(df$medium))) )\ndf$medium <- as.numeric(df$medium)\ndf$medium <- norm(df$medium)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ba2bc22e2641470dfcdae68933bb70a03f42c912"
+      },
+      "cell_type": "code",
+      "source": "relOs <- data.frame( 'operatingSystem' = unique(df$operatingSystem), 'num' = norm(as.numeric(unique(df$operatingSystem))) )\ndf$operatingSystem <- as.numeric(df$operatingSystem)\ndf$operatingSystem <- norm(df$operatingSystem)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "fbe15fcc5f9294cdfcce48a4769161a2273f7556"
+      },
+      "cell_type": "code",
+      "source": "relCountry <- data.frame( 'pais' = unique(df$country), 'num' = norm(as.numeric(unique(df$country))) )\ndf$country <- as.numeric(df$country)\ndf$country <- norm(df$country)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "afc3121496e2cb55117052118e6cac2dc0e2c7dd"
+      },
+      "cell_type": "code",
+      "source": "relMes <- data.frame( 'mes' = unique(df$mes), 'num' = norm(as.numeric(unique(as.factor(df$mes)))) )\ndf$mes <- as.numeric(as.factor(df$mes))\ndf$mes <- norm(df$mes)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "57cd403f8b4ab014b09deb78a2add52a9c27d83d"
+      },
+      "cell_type": "code",
+      "source": "relCampaign <- data.frame( 'campaign' = unique(df$campaign), 'num' = norm(as.numeric(unique(df$campaign))) )\ndf$campaign <- as.numeric(df$campaign)\ndf$campaign <- norm(df$campaign)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b4e2e9c2c705257d7f69fd11f2d52d31ef4aa14b"
+      },
+      "cell_type": "code",
+      "source": "relSemana <- data.frame( 'semana' = unique(df$semana), 'num' = norm(as.numeric(unique(as.factor(df$semana)))) )\ndf$semana <- as.numeric(as.factor(df$semana))\ndf$semana <- norm(df$semana)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ba45e19d6b874c9bda9bef8be3f8116868c756c4"
+      },
+      "cell_type": "code",
+      "source": "relOS <- data.frame( 'pais' = unique(df$operatingSystem), 'num' = norm(as.numeric(unique(df$operatingSystem))) )\ndf$operatingSystem <- as.numeric(df$operatingSystem)\ndf$operatingSystem <- norm(df$operatingSystem)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9bdfa895b092aa4efbd54861edd6be7c583afcaf"
+      },
+      "cell_type": "code",
+      "source": "relSrc <- data.frame( 'src' = unique(df$source), 'num' = norm(as.numeric(unique(df$source))) )\ndf$source <- as.numeric(df$source)\ndf$source <- norm(df$source)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b9bdde871fab729bb161a18991f5ccb295caa5d0"
+      },
+      "cell_type": "code",
+      "source": "summary(df)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "342fe1e1e64857487c045b17cd6c593b634ab4cc"
+      },
+      "cell_type": "markdown",
+      "source": "Separando em teste e treino "
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b3a77fe240bba648cf2d9e29ccee2c9b3979f25e"
+      },
+      "cell_type": "code",
+      "source": "nmr=sample(1:nrow(df), as.integer(nrow(df)/7))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "5d9669cd7dc8fdf8c28657dee56bac7b5f4abb26"
+      },
+      "cell_type": "code",
+      "source": "test = df[nmr,]\ntrain = df[-nmr,]",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "6966c011f594b6c8d31c20a87f102439e0d94deb"
+      },
+      "cell_type": "markdown",
+      "source": "Árvores Aleatórias"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "455a255418810968c97f04c0bdcd29ad6bb7a42a"
+      },
+      "cell_type": "code",
+      "source": "library(randomForest)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "277ae09a7ad4ffb349719b593dd2732566885220"
+      },
+      "cell_type": "code",
+      "source": "rf1 <- randomForest(x=train[2:13], y=train$transactionRevenue, do.trace=10, ntree=50)\nprint(rf1)\nplot(rf1)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "e75cf8e43790d8f079de866ec7cf4686ed514b03"
+      },
+      "cell_type": "code",
+      "source": "rf2 <- randomForest(x=train[2:13], y=train$transactionRevenue, do.trace=10, ntree=50)\nprint(rf2)\nplot(rf2)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9ad75e1cad5b73ff37a4a1084b07722a472eaaa9"
+      },
+      "cell_type": "code",
+      "source": "rf3 <- randomForest(x=train[2:13], y=train$transactionRevenue, do.trace=10, ntree=50)\nprint(rf3)\nplot(rf3)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "7744cbd4161cfb68af02ac0cc51ca12da9eb7a4b"
+      },
+      "cell_type": "code",
+      "source": "rf<-combine(rf1, rf2, rf3)\nprint(rf)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "08e4c9abe2252c366bfe3dfb36c58bdef890a9eb"
+      },
+      "cell_type": "code",
+      "source": "rf4 <- randomForest(x=train[2:13], y=train$transactionRevenue, do.trace=10, ntree=100)\nprint(rf4)\nplot(rf4)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "905ee5a48592bbd78b602e98ab3fdb624bb053ec"
+      },
+      "cell_type": "code",
+      "source": "rf5 <- randomForest(x=train[2:13], y=train$transactionRevenue, do.trace=10, ntree=100)\nprint(rf5)\nplot(rf5)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "c22f510f1a36a12ed0c4148e47f3cf8926bc0e2c"
+      },
+      "cell_type": "code",
+      "source": "rf6 <- randomForest(x=train[2:13], y=train$transactionRevenue, do.trace=10, ntree=100)\nprint(rf6)\nplot(rf6)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "707484fa436b532cebf00c8fceb736aca3fd89e9"
+      },
+      "cell_type": "code",
+      "source": "rf2<-combine(rf4, rf5, rf6)\nprint(rf2)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "ee3ad137137a454f4b8d9f6d97770646df7859cc"
+      },
+      "cell_type": "code",
+      "source": "pRf<-predict(rf, test[2:13])\npRf2<-predict(rf2, test[2:13])",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "73b984945edbf538d1f226b3a1429814a4d23b9b"
+      },
+      "cell_type": "code",
+      "source": "#mediaErro²\nlibrary(hydroGOF)\n",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "be10d1b7371fbb26b358854190301ee3614dde50"
+      },
+      "cell_type": "code",
+      "source": "mse(pRf, test$transactionRevenue)\nmse(pRf2, test$transactionRevenue)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "60d61c989762cac5656083617abc4b6d6a18a313"
+      },
+      "cell_type": "code",
+      "source": "matrix(c(pRf, test$transactionRevenue),ncol=2 )",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "69238f274b63b42b1fee256686578ed0a14117ee"
+      },
+      "cell_type": "code",
+      "source": "matrix(c(pRf2, test$transactionRevenue),ncol=2 )",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "86763ada4af63347c5c60d029182451c577c8ace"
+      },
+      "cell_type": "markdown",
+      "source": "Salvando o modelo"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "f7ff65122899d2a19ee1c1b90d85458357a94fc0"
+      },
+      "cell_type": "code",
+      "source": "save(rf, file='rfEst.R')\nsave(rf2, file='rfEst2.R')",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "R",
+      "language": "R",
+      "name": "ir"
+    },
+    "language_info": {
+      "mimetype": "text/x-r-source",
+      "name": "R",
+      "pygments_lexer": "r",
+      "version": "3.4.2",
+      "file_extension": ".r",
+      "codemirror_mode": "r"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 1
+}

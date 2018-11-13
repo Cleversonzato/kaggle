@@ -1,0 +1,711 @@
+{
+  "cells": [
+    {
+      "metadata": {
+        "_uuid": "ea3f4388a743e258125b7fb7c5056af9852eb217"
+      },
+      "cell_type": "markdown",
+      "source": "Então vamos lá!\nPara começar, importei os dados de um kernel publico: <a href=\"https://www.kaggle.com/mrlong/r-flatten-json-columns-to-make-single-data-frame\">R - Flatten JSON columns to make single data frame</a>, o que nos ajuda a economizar um tempo no pre-processamento  ( Para adicionar os dados que saem de um outro kernel, vá no menu aqui da direita e clique em add data).\nEntão vou importar os dados dele, em vez dos dados \"puros\" da competição"
+    },
+    {
+      "metadata": {
+        "_uuid": "2c9af0b3e933ae1072c20d91d7e62772617832b7"
+      },
+      "cell_type": "markdown",
+      "source": "A titulo de curiosidade (me lembrando que eu demorei um monte pra descobrir como fazer isso), para importar os dados oficiais, eles aparecem no menu da direita, abaixo do add data.\n\nSe vc não tiver adicionado nenhuma outra coisa, o comando pra isso é:\ntrain <- read.csv('../input/train.csv'')\ntest <- read.csv('../input/test.csv')\n\ncomo já adicionei outras coisas, o comando virou:\ntrain <- read.csv('../input/ga-customer-revenue-prediction/train.csv')\ntest <- read.csv('../input/ga-customer-revenue-prediction/test.csv')\n\nOu seja, o diretório em que estão os aquivos muda um pouco.\nOutra dica é que se vc apertar 'tab' aparecem sugestões para autocompletar o caminho do diretório ou comandos que vc possa querer dar\n"
+    },
+    {
+      "metadata": {
+        "_uuid": "0404bb79b45da6669f15e2f84d51be156efd4462",
+        "_execution_state": "idle",
+        "trusted": true
+      },
+      "cell_type": "code",
+      "source": "#bibliotecas necessárias\nlibrary(tidyverse) \nlibrary(reshape)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "196269589c60d6bde6dfd6e559daafe6d6a072fb"
+      },
+      "cell_type": "code",
+      "source": "#importando os dados de treino já pré-processados\ndados <- read.csv('../input/r-flatten-json-columns-to-make-single-data-frame/train_flat.csv')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "a8c090acd69cdf53bb45a596875d9fc68098c14d"
+      },
+      "cell_type": "code",
+      "source": "head(dados)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "08ed00d89a33d57f7a55994d9254948ebb2cd91f"
+      },
+      "cell_type": "markdown",
+      "source": "No caso, o que querem é que a  gente identifique quais são as pessoas/o perfil que gastam mais e o quanto elas gastam.\nOu seja, quanto \"transactionRevenue\" um fullVisitorId gera para a loja.\n\nE para traçar esse perfil, temos todos os outros dados.\n"
+    },
+    {
+      "metadata": {
+        "_uuid": "4e34fd14aedef0aa182aa17090043ea627b51253"
+      },
+      "cell_type": "markdown",
+      "source": "Ah sim, isso tudo com o objetivo de selecionar classificadores para que eu possa construir um modelo de ml/ia depois, pra fazer a predição por nós."
+    },
+    {
+      "metadata": {
+        "_uuid": "13f637246b367eae993c778717f2b8bcaae08bd5"
+      },
+      "cell_type": "markdown",
+      "source": "Como a \"dados$transactionRevenue\", é pesadassa, vou tentar fazer uma pré-analise dela por outros meios:"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "e0bec62ce4ccbbb17b5cc38aec8e54010d137f86"
+      },
+      "cell_type": "code",
+      "source": "#total de linhas\ncat('Total de linhas: ', nrow(dados))\n#Contagem dos que realmente compraram algo\ncat('\\nTotal de vendas:', sum(!is.na(dados$transactionRevenue)) )\n",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "578ecadfdc4a2aeb2bac2da2080c7aa9513a674d"
+      },
+      "cell_type": "code",
+      "source": "summary(dados)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "55361b80d1151bc81a57dcb029b43aa7bb2527db"
+      },
+      "cell_type": "markdown",
+      "source": "Verificando os NAs"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "1286c5f0d446ea859b9c190f2f13d0ba3c44be38"
+      },
+      "cell_type": "code",
+      "source": "#verificando os NAs por coluna\nmap(dados, ~sum(is.na(.)))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "c8be5e8ec01fa6b779b119dc5c45a7f15a503327"
+      },
+      "cell_type": "markdown",
+      "source": "Removendo as colunas com todos os valores == 'not available in demo dataset'"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "03ad834fc99e28377b561dc0a015caf77286b7ea"
+      },
+      "cell_type": "code",
+      "source": "temp<- map(dados, ~sum((.)=='not available in demo dataset' ))\ntemp <- temp == nrow(dados)\ncat ('antes:', ncol(dados) )\ntemp[is.na(temp)]<- FALSE\ndados<- dados[, !temp]\ncat ('\\ndepois:', ncol(dados) )\nhead(dados)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "bfab60524470d0d23906131dfb658c7e8ee65adb"
+      },
+      "cell_type": "markdown",
+      "source": ""
+    },
+    {
+      "metadata": {
+        "_uuid": "48a8d3e052e946ecf6f3626c96d0fd9c38d0838b"
+      },
+      "cell_type": "markdown",
+      "source": "Retirando  o \"socialEngagementType\", que só tem o tipo \"Not Socially Engaged\""
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "f269d6a6eefb4d94d1a6ef3e0a657c48b8b621c1"
+      },
+      "cell_type": "code",
+      "source": "dados<- dados[, names(dados)!='socialEngagementType']",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "8a752d92133c256fc2c9de9f4cb35b9a225ab744"
+      },
+      "cell_type": "markdown",
+      "source": "E vou separar os dados entre \"vendas\" e \"não vendas\"/visitas"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "3d65b47cd59f8a10d865e6f44aea51fb8a6c9d87"
+      },
+      "cell_type": "code",
+      "source": "vendas <- dados[!is.na(dados$transactionRevenue),]\nvisitas<- dados[is.na(dados$transactionRevenue),]\ncat(nrow(vendas), nrow(visitas))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "c55f18f5588da5df6bdfc1d8052ab409cffe8d6f"
+      },
+      "cell_type": "markdown",
+      "source": "Agora vem a parte de analisar as variáveis e achar relações, que provavelmente você é muito melhor que eu, então de suas sugestões!\nPor enquanto, vou dando uns tiros no que parece ser provável"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "5efda85893481b6ff4e77af1a8b0651efb23acab"
+      },
+      "cell_type": "code",
+      "source": "summary(vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "f12e6adc79506f42cfe4302a40b547481eec0269"
+      },
+      "cell_type": "code",
+      "source": "summary(visitas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "9db8841ec939daa943278bd5ea2868f9fc317c62"
+      },
+      "cell_type": "code",
+      "source": "names(vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "74fbe8712583ca3382d203f0cbc5eff64228ec8e"
+      },
+      "cell_type": "code",
+      "source": "correlacoes<- lapply(vendas, function(x) cor(as.numeric(x), vendas$transactionRevenue))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "885df6dac1028397344bc6e9150e198bcbbe6f9b"
+      },
+      "cell_type": "code",
+      "source": "correlacoes<- as.data.frame(correlacoes[ !is.na(correlacoes)] )\ncorrelacoes<- as.data.frame(correlacoes %>% sort() %>% melt())\ncorrelacoes",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "5ac7bd781dce7c7b8c184f472026d7d78a526cba"
+      },
+      "cell_type": "markdown",
+      "source": "As correlações não são as melhores, mas da pra ja pensar em eliminar algumas variáveis/colunas que provavelmente tem ou não relação "
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "7f6d9dbfe770d4d4c5c30bff265209a3434b3ef9"
+      },
+      "cell_type": "markdown",
+      "source": "Agora para tentar achar pontos de diferenciação entre as visitas e as vendas"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "f74a5fdfdd50b6c23ab01f83f05bd3410f90a5da"
+      },
+      "cell_type": "code",
+      "source": "graficoBox <- function(nome, visitas, vendas, minY=NA, maxY=NA){        \n    gp <-ggplot() +\n    geom_boxplot(data=visitas,  aes_string(x=1, y=nome, colour=shQuote(\"Visita\")))+\n    geom_boxplot(data=vendas,  aes_string(x=2, y=nome, colour=shQuote(\"Venda\")))+   \n    ggtitle(nome)\n    \n    if( is.numeric(minY) || is.numeric(maxY) ){\n        gp <-gp + coord_cartesian(minY,maxY)\n    }\n    \n    return(gp)\n}",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "e0696817a533ff3fbdc32446683086c14c0f949c"
+      },
+      "cell_type": "code",
+      "source": "graficoBar <- function(nome, visitas, vendas, minY=NA, maxY=NA){    \n    gp<-ggplot()+\n    geom_bar(data=visitas,  aes_string(x=nome, y = \"..count../sum(..count..)\" , colour=shQuote(\"Visita\"), alpha = 0.8))+\n    geom_bar(data=vendas,  aes_string(x=nome, y = \"..count../sum(..count..)\" , colour=shQuote(\"Venda\"), alpha = 0.8))+\n    theme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+\n    guides(alpha = FALSE)+   \n    ggtitle(nome)\n    \n  if( is.numeric(minY) || is.numeric(maxY) ){\n        gp <-gp + coord_cartesian(minY,maxY)\n    }\n    \n  return(gp)\n}",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "afbb3882f432f45cc309042f482b46125b3b5b30"
+      },
+      "cell_type": "code",
+      "source": "graficoBox('visitNumber',visitas, vendas, , 20)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "3f8bee3523ee7c8c382109ce14cb37680d849064"
+      },
+      "cell_type": "code",
+      "source": "graficoBox('visitStartTime',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "e3c3c95e586ca2e923348a501864ed1ef555ab8e"
+      },
+      "cell_type": "markdown",
+      "source": "Este aqui vale um adendo, já que é o tempo em milisegundos. vamos trabalhar um pouco mais isso:"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "c76cdee1c73b5d8802ea3243815bcd9ab80fbf49"
+      },
+      "cell_type": "code",
+      "source": "vendas$mudadoStartTime <- as.POSIXct(vendas$visitStartTime, origin=\"1970-01-01\")\nvisitas$mudadoStartTime <- as.POSIXct(visitas$visitStartTime, origin=\"1970-01-01\")\nhead(vendas$mudadoStartTime)\nhead(visitas$mudadoStartTime)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "2de2261124152873559dfbf6fc2308ce66281b5d"
+      },
+      "cell_type": "code",
+      "source": "temp <- data.frame(   \n     hora<- substr(vendas$mudadoStartTime,12,13),\n    min<- substr(vendas$mudadoStartTime,15,16),\n    dia<- substr(vendas$mudadoStartTime,8,10),\n    mes<- months(vendas$mudadoStartTime),    \n    semana<-weekdays(vendas$mudadoStartTime),\n    pais <- vendas$country\n    )\n\ntemp2 <- data.frame(    \n    hora<- substr(visitas$mudadoStartTime,12,13),\n    min<- substr(visitas$mudadoStartTime,15,16),\n    dia<- substr(visitas$mudadoStartTime,8,10),\n    mes<- months(visitas$mudadoStartTime),    \n    semana<-weekdays(visitas$mudadoStartTime),\n    pais <- visitas$country\n    )",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "23a33ec2bf810cbead6d61571305dba7ed3b8e49"
+      },
+      "cell_type": "code",
+      "source": "names(temp)<-  c('hora','min', 'dia', 'mes', 'semana', 'pais' )\nnames(temp2)<-  c('hora','min', 'dia', 'mes', 'semana', 'pais' )",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "6fbcf17fcadb0343d7fc14388d90fdc6a949d625"
+      },
+      "cell_type": "code",
+      "source": "ggplot()+\n    geom_bar(data=temp,  aes(x=hora, y = ..count../sum(..count..) , colour='Vendas', alpha = 0.8))+\n    geom_bar(data=temp2,  aes(x=hora, y = ..count../sum(..count..) , colour='Visitas', alpha = 0.8))+\n    theme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ), legend.position=\"none\")+   \n    guides(alpha = FALSE) +\n    ggtitle('visitStartTime: hora')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "caadc05122395f3994752319ef0889db75c69dd8"
+      },
+      "cell_type": "markdown",
+      "source": "Esse é mais para ter uma ideia dos casos de vendas/país por horário. Note que o maior (EUA) tem um fuso horário de -7, por isso no 7 temos uma diminução nos acessos (lá seria meia noite)"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "df7e378997a914519f18317044db905b358c2987"
+      },
+      "cell_type": "code",
+      "source": "ggplot()+\n    geom_bar(data=temp,  aes(x=hora, y = ..count../sum(..count..) , colour=pais, alpha = 0.8) )+\n    #geom_bar(data=temp2,  aes(x=hora, y = ..count../sum(..count..) , colour=pais, alpha = 0.8))+\n    theme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ), legend.position=\"botton\")+   \n    guides(alpha = FALSE) +\n    ggtitle('visitStartTime: hora/venda/pais')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "f7ab727c6d1e04522086d93ca59334e139a5f28c"
+      },
+      "cell_type": "markdown",
+      "source": "Agora visitas por hora/pais"
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "e5b2e27373c4f3d29fcc8ae1bb7b11cc65f12b24"
+      },
+      "cell_type": "code",
+      "source": "ggplot()+\n    #geom_bar(data=temp,  aes(x=hora, y = ..count../sum(..count..) , colour=pais, alpha = 0.8) )+\n    geom_bar(data=temp2,  aes(x=hora, y = ..count../sum(..count..) , colour=pais, alpha = 0.8))+\n    theme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ), legend.position=\"none\")+   \n    guides(alpha = FALSE) +\n    ggtitle('visitStartTime: hora/visita/pais')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "e5e9d422a9d5bbb9570fd26bc6dba2247172cf8e"
+      },
+      "cell_type": "markdown",
+      "source": "E os dados por dia, dia da semana  e mês.\n\nA relação destes por país não me pareceu relevante em uma análise rápida."
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "5649d8ca650d4e9c97937180a61508b583325be8"
+      },
+      "cell_type": "code",
+      "source": "ggplot()+\n    geom_bar(data=temp,  aes(x=dia, y = ..count../sum(..count..) , colour='Vendas', alpha = 0.8))+\n    geom_bar(data=temp2,  aes(x=dia, y = ..count../sum(..count..) , colour='Visitas', alpha = 0.8))+\n    theme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+   \n    guides(alpha = FALSE) +\n    ggtitle('visitStartTime: dia')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "c4a49eeb0e903fa459f1f1d480d12f9db6640bbf"
+      },
+      "cell_type": "code",
+      "source": "ggplot()+\n    geom_bar(data=temp,  aes(x=semana, y = ..count../sum(..count..) , colour='Vendas', alpha = 0.8))+\n    geom_bar(data=temp2,  aes(x=semana, y = ..count../sum(..count..) , colour='Visitas', alpha = 0.8))+\n    theme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+   \n    guides(alpha = FALSE) +\n    ggtitle('visitStartTime: semana')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "6e919f8b16390cd0b26ec5c05e4668972b7833af"
+      },
+      "cell_type": "code",
+      "source": "ggplot()+\n    geom_bar(data=temp,  aes(x=mes, y = ..count../sum(..count..) , colour='Vendas', alpha = 0.8))+\n    geom_bar(data=temp2,  aes(x=mes, y = ..count../sum(..count..) , colour='Visitas', alpha = 0.8))+\n    theme(axis.text.x = element_text(angle = 90,hjust=1, vjust=0.5 ))+   \n    guides(alpha = FALSE) +\n    ggtitle('visitStartTime: mes')",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "c20031453212185a9f0d447de10cdf2d93df53fc"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('browser',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "5966db09984a994aaa44bac4daf70c1d8cec4e87"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('operatingSystem',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "1a3ca5b8206ab6773ca56f9242e3224d4cc6cc37"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('isMobile',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "3ad5c9b22fa2ee9086d49b4d58cd222372b932aa"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('continent',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "0740ddb684746393ab09854d58bb8de31659681f"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('subContinent',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "2fcb2e631b1b5b26f43e4ee61ff25f120986f180"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('country',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "46bc28b13402a043bfe2caa048f782ae2f021eb5"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('region',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b83316ae68eb1832e8cdd41aba5111c6f14c6c04"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('metro',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b0a74fe43a41d085c98ea6d927a9e6f669367f29"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('city',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "f2a4bca0e3d3273570dd6515be25abbc1222e34e"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('networkDomain',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "5a4d735d1eefe87ce6462265a62ad34dd7b1a1c2"
+      },
+      "cell_type": "code",
+      "source": "graficoBox('visits',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "c266d70fb320b4b93883fafd8bf076b8fa95f1c5"
+      },
+      "cell_type": "code",
+      "source": "graficoBox('hits',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "aa445f7f6856bb0d6897748be5e7a1f50daa0c6c"
+      },
+      "cell_type": "code",
+      "source": "graficoBox('pageviews',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "05b9178ea0750ee3690b12d5db9338cef0f41ec1"
+      },
+      "cell_type": "code",
+      "source": "graficoBox('bounces',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "97433978bf3dcb12d07399f818d82beefde1702a"
+      },
+      "cell_type": "code",
+      "source": "graficoBox('newVisits',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "db512cf3de430893317e29e4ef9d79e119e4ad49"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('campaign',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "scrolled": true,
+        "_uuid": "dd3abdb5a237cd1af5279e857cf4892fc4a142ab"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('source',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "e67684643f51b795361bda6f52d0c7620367febd"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('medium',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "d24effea59dc183c6e6e365c0c647cdf6fe172d3"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('keyword',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "scrolled": true,
+        "_uuid": "f9695dea98bd334efc638b95904932fb661c1315"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('isTrueDirect',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "176f9f24ed8cf22a27741251315732271472dafa"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('referralPath',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b40d7da3b60de3118b35f4cade328c799681f6b3"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('adContent',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "2e86206c2ecf64ccbe41a934b34a78dd0c6febe8"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('campaignCode',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "e79cbd3cf85ffdc168e2a0c166c761f8a124dc43"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('adwordsClickInfo.page',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "4539ad2092daef76277492bd64615217c34756df"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('adwordsClickInfo.slot',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b9800702bc76bb692b3d3bdb80216578c1897264"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('adwordsClickInfo.gclId',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "867d7c31fdc0b33d8240eeb61b2a6a87a0f52034"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('adwordsClickInfo.adNetworkType',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "c1ec18424b4631e4e1bc14c98ccaf294cbce8eea"
+      },
+      "cell_type": "code",
+      "source": "graficoBar('adwordsClickInfo.isVideoAd',visitas, vendas)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_uuid": "db859450b8518575b7f1abfe3160f94c9d83d270"
+      },
+      "cell_type": "markdown",
+      "source": " --Ufffsss!--\n Apareceram varias coisas estranhas no meio, mas acho que de modo geral da pra tirar algumas conclusões desses dados.\n No mais, acho tbm que dá para fazer um esquema de primeiro identificar se a pessoa é uma compradora ou não (pegando os gráficos com os resutlados mais conflitantes/não correlacionados) e, se sim, quanto ela vai gastar (usando os dados com maior correlação com o valor gasto). \n O que acha?\n "
+    },
+    {
+      "metadata": {
+        "trusted": true,
+        "_uuid": "b32e2aef6ddbdadcdf28735e1803bff23a3e8e7a"
+      },
+      "cell_type": "code",
+      "source": "",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "R",
+      "language": "R",
+      "name": "ir"
+    },
+    "language_info": {
+      "mimetype": "text/x-r-source",
+      "name": "R",
+      "pygments_lexer": "r",
+      "version": "3.4.2",
+      "file_extension": ".r",
+      "codemirror_mode": "r"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 1
+}
